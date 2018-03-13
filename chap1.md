@@ -262,3 +262,133 @@ server.3=zoo3:2888:3888
 - `syncLimit`: 该参数配置leader和follower之间发送消息, 请求和应答的最大时间长度. 此时该参数设置为2, 说明时间限制为2倍tickTime, 即4000ms.
 - `2888` 点对点通信，如 followers 和 leaders 之间通信。
 - `3888` 用于leader节点选举。
+
+### 创建 myid
+
+在 `dataDir`下创建一个名为`myid`的文件，里面有一个数字（1-255），每个节点有不同的myid。
+
+### 启动服务实例
+
+在每个节点上执行：
+
+```shell
+${ZK_HOME}/bin/zkServer.sh start
+```
+
+查看状态：
+
+```shell
+${ZK_HOME}/bin/zkServer.sh status
+JMX enabled by default
+Using config: /usr/share/zookeeper-3.4.6/bin/../conf/zoo.cfg
+Mode: follower
+```
+
+```shell
+[zoo2] # ${ZK_HOME}/bin/zkServer.sh status
+JMX enabled by default
+Using config: /usr/share/zookeeper-3.4.6/bin/../conf/zoo.cfg
+Mode: leader
+```
+
+```shell
+[zoo3] # ${ZK_HOME}/bin/zkServer.sh status
+JMX enabled by default
+Using config: /usr/share/zookeeper-3.4.6/bin/../conf/zoo.cfg
+Mode: follower
+
+```
+
+在这个例子中，zoo2被选举为 leader, 其他两个节点是 follower。
+
+客户端连接：
+
+```shell
+$ zkCli.sh -server zoo1:2181,zoo2:2181,zoo3:2181
+Connecting to zoo1:2181, zoo2:2181, zoo3:2181
+......... ...
+Welcome to ZooKeeper!
+......... ...
+[zk: zoo1:2181,zoo2:2181,zoo3:2181 (CONNECTED) 0]
+```
+
+### 单机多节点模式
+
+在同一台机器上也可以启动多节点模式的zookeeper:
+
+```shell
+tickTime=2000
+initLimit=5
+syncLimit=2
+dataDir=/var/lib/zookeeper
+clientPort=2181
+server.1=localhost:2666:3666
+server.2=localhost:2667:3667
+server.3=localhost:2668:3668
+```
+
+注意：
+
+* server.x=localhost:2666:3666  第二段和第三段的端口号不能重复
+* clientPort 不能重复
+* 每个实例都有自己的dataDir
+* 三个配置文件 zoo1.cfg, zoo2.cfg, zoo3.cfg，放在 `${ZK_HOME}/conf`下
+* 在`/var/lib/zookeeper` 下创建3个文件夹 `zoo1, zoo2, zoo3`
+
+第一个节点的配置文件：
+
+```shell
+tickTime=2000
+initLimit=5
+syncLimit=2
+dataDir=/var/lib/zookeeper/zoo1
+clientPort=2181
+server.1=localhost:2666:3666
+server.2=localhost:2667:3667
+server.3=localhost:2668:3668
+```
+
+第二个第三个：
+
+```shell
+tickTime=2000
+initLimit=5
+syncLimit=2
+dataDir=/var/lib/zookeeper/zoo2
+clientPort=2182
+server.1=localhost:2666:3666
+server.2=localhost:2667:3667
+server.3=localhost:2668:3668
+```
+
+```shell
+tickTime=2000
+initLimit=5
+syncLimit=2
+dataDir=/var/lib/zookeeper/zoo3
+clientPort=2183
+server.1=localhost:2666:3666
+server.2=localhost:2667:3667
+server.3=localhost:2668:3668
+```
+
+* 创建 `myid`
+
+  ```shell
+  $ echo 1 > /var/lib/zookeeper/zoo1/myid
+  $ echo 2 > /var/lib/zookeeper/zoo2/myid
+  $ echo 3 > /var/lib/zookeeper/zoo3/myid
+  ```
+
+  ​
+
+* 启动
+
+  ```shell
+  $ ${ZK_HOME}/bin/zkServer.sh start ${ZK_HOME}/conf/zoo1.cfg
+  $ ${ZK_HOME}/bin/zkServer.sh start ${ZK_HOME}/conf/zoo2.cfg
+  $ ${ZK_HOME}/bin/zkServer.sh start ${ZK_HOME}/conf/zoo3.cfg
+  ```
+
+  ​
+
